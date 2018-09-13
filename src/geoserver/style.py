@@ -4,6 +4,10 @@ gsconfig is a python library for manipulating a GeoServer instance via the GeoSe
 The project is distributed under a MIT License .
 '''
 
+__author__ = "David Winslow"
+__copyright__ = "Copyright 2012-2018 Boundless, Copyright 2010-2012 OpenPlans"
+__license__ = "MIT"
+
 from geoserver.support import ResourceInfo, build_url, xml_property
 try:
     from past.builtins import basestring
