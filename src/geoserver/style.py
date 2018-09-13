@@ -74,6 +74,7 @@ class Style(ResourceInfo):
         if not user_style:
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
 
+        title_node = None
         if user_style:
             try:
                 # it is not mandatory
@@ -89,6 +90,7 @@ class Style(ResourceInfo):
         if not user_style:
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
 
+        name_node = None
         if user_style:
             try:
                 # it is not mandatory

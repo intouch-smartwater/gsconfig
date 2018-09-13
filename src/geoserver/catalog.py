@@ -350,6 +350,9 @@ class Catalog(object):
             params["update"] = "overwrite"
         if charset is not None:
             params["charset"] = charset
+        params["filename"] = "{}.zip".format(name)
+        params["target"] = "shp"
+        # params["configure"] = "all"
 
         headers = {'Content-Type': 'application/zip', 'Accept': 'application/xml'}
         upload_url = build_url(
@@ -372,7 +375,8 @@ class Catalog(object):
                     FailedRequestError('Failed to add data to store {} : {}, {}'.format(store, resp.status_code, resp.text))
                 self._cache.clear()
         finally:
-            os.unlink(bundle)
+            # os.unlink(bundle)
+            pass
 
     def create_featurestore(self, name, data, workspace=None, overwrite=False, charset=None):
         if workspace is None:
