@@ -107,6 +107,7 @@ class Layer(ResourceInfo):
         super(Layer, self).__init__()
         self.catalog = catalog
         self.name = name
+        self.gs_version = self.catalog.get_short_version()
 
     resource_type = "layer"
     save_method = "PUT"
@@ -122,6 +123,9 @@ class Layer(ResourceInfo):
         name = self.dom.find("resource/name").text
         atom_link = [n for n in self.dom.find("resource").getchildren() if 'href' in n.attrib]
         ws_name = workspace_from_url(atom_link[0].get('href'))
+        if self.gs_version >= "2.13":
+            if ":" in name:
+                ws_name,name = name.split(':')
         return self.catalog.get_resources(names=name, workspaces=ws_name)[0]
 
     def _get_default_style(self):

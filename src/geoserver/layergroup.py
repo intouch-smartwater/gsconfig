@@ -76,7 +76,7 @@ class LayerGroup(ResourceInfo):
 
         # the XML format changed in 2.3.x - the element listing all the layers
         # and the entries themselves have changed
-        if self.catalog.gsversion() == "2.2.x":
+        if self.catalog.get_version() == "2.2.x":
             parent, element, attributes = "layers", "layer", None
         else:
             parent, element, attributes = "publishables", "published", {'type': 'layer'}

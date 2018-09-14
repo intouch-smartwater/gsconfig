@@ -21,6 +21,7 @@ from geoserver.support import prepare_upload_bundle, build_url, JDBCVirtualTable
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
 import os
+import re
 from xml.etree.ElementTree import XML
 from xml.parsers.expat import ExpatError
 import requests
@@ -143,7 +144,7 @@ class Catalog(object):
             resp = req_method(url, headers=headers, data=data, auth=(self.username, self.password))
         return resp
 
-    def gsversion(self):
+    def get_version(self):
         '''obtain the version or just 2.2.x if < 2.3.x
         Raises:
             FailedRequestError: If the request fails.
@@ -172,6 +173,13 @@ class Catalog(object):
             version = "2.2.x"
         self._version = version
         return version
+
+    def get_short_version(self):
+        '''obtain the shory geoserver version
+        '''
+        gs_version = self.get_version()
+        match = re.compile(r'[^\d.]+')
+        return match.sub('', gs_version).strip('.')
 
     def delete(self, config_object, purge=None, recurse=False):
         """
@@ -499,6 +507,9 @@ class Catalog(object):
         """
         if path is None:
             raise Exception('You must provide a full path to the raster')
+            
+        if ":" in layer_name:
+            ws_name,layer_name = layer_name.split(':')
 
         allowed_types = [
             'ImageMosaic',
@@ -843,6 +854,10 @@ class Catalog(object):
 
     def get_layers(self, resource=None):
         if isinstance(resource, basestring):
+            if self.get_short_version() >= "2.13":
+                if ":" in resource:
+                    ws_name,resource = resource.split(':')
+
             resource = self.get_resources(names = resource)[0]
         layers_url = "{}/layers.xml".format(self.service_url)
         data = self.get_xml(layers_url)

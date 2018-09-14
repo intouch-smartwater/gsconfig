@@ -53,7 +53,7 @@ if GSPARAMS['GS_VERSION']:
                       "http://central.maven.org/maven2/org/eclipse/jetty/jetty-runner/9.4.5.v20170502/jetty-runner-9.4.5.v20170502.jar",
                       "-P", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
     subprocess.Popen(["wget",
-                      "http://ares.boundlessgeo.com/geoserver/" + GSPARAMS['GS_VERSION'] +"/geoserver-" + GSPARAMS['GS_VERSION'] + "-latest-war.zip",
+                      "https://build.geoserver.org/geoserver/" + GSPARAMS['GS_VERSION'] +"/geoserver-" + GSPARAMS['GS_VERSION'] + "-latest-war.zip",
                       "-P", GSPARAMS['GS_BASE_DIR'] + "/gs"]).communicate()
     subprocess.Popen(["unzip", "-o", "-d", GSPARAMS['GS_BASE_DIR'] + "/gs",
                       GSPARAMS['GS_BASE_DIR'] + "/gs/geoserver-" + GSPARAMS['GS_VERSION'] + "-latest-war.zip"]).communicate()
@@ -113,9 +113,10 @@ class NonCatalogTests(unittest.TestCase):
 class CatalogTests(unittest.TestCase):
     def setUp(self):
         self.cat = Catalog(GSPARAMS['GSURL'], username=GSPARAMS['GSUSER'], password=GSPARAMS['GSPASSWORD'])
+        self.gs_version = self.cat.get_short_version()
 
     def testGSVersion(self):
-        version = self.cat.gsversion()
+        version = self.cat.get_version()
         pat = re.compile('\d\.\d+')
         self.assertTrue(pat.match('2.2.x'))
         self.assertTrue(pat.match('2.3.2'))
@@ -207,12 +208,51 @@ class CatalogTests(unittest.TestCase):
 
 
     def testLayers(self):
-        expected = set(["Arc_Sample", "Pk50095", "Img_Sample", "mosaic", "sfdem",
-            "bugsites", "restricted", "streams", "archsites", "roads",
-            "tasmania_roads", "tasmania_water_bodies", "tasmania_state_boundaries",
-            "tasmania_cities", "states", "poly_landmarks", "tiger_roads", "poi",
-            "giant_polygon"
-        ])
+        if self.gs_version >= "2.13":
+            expected = set([
+                'sf:roads',
+                'sf:sfdem',
+                'nurc:mosaic',
+                'tiger:giant_polygon',
+                'sf:bugsites',
+                'topp:states',
+                'sf:streams',
+                'tiger:poly_landmarks',
+                'tiger:poi',
+                'topp:tasmania_water_bodies',
+                'tiger:tiger_roads',
+                'topp:tasmania_roads',
+                'nurc:Pk50095',
+                'topp:tasmania_cities',
+                'nurc:Img_Sample',
+                'sf:restricted',
+                'nurc:Arc_Sample',
+                'sf:archsites',
+                'topp:tasmania_state_boundaries'
+            ])
+        else:
+            expected = set([
+                "Arc_Sample",
+                "Pk50095",
+                "Img_Sample",
+                "mosaic",
+                "sfdem",
+                "bugsites",
+                "restricted",
+                "streams",
+                "archsites",
+                "roads",
+                "tasmania_roads",
+                "tasmania_water_bodies",
+                "tasmania_state_boundaries",
+                "tasmania_cities",
+                "states",
+                "poly_landmarks",
+                "tiger_roads",
+                "poi",
+                "giant_polygon"
+            ])
+
         actual = set(l.name for l in self.cat.get_layers())
         missing = expected - actual
         extras = actual - expected
@@ -238,7 +278,10 @@ class CatalogTests(unittest.TestCase):
 
         self.assert_("tasmania", tas.name)
         self.assert_(isinstance(tas, LayerGroup))
-        self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas.layers)
+        if self.gs_version >= "2.13":
+            self.assertEqual(tas.layers, ['topp:tasmania_state_boundaries', 'topp:tasmania_water_bodies', 'topp:tasmania_roads', 'topp:tasmania_cities'], tas.layers)
+        else:
+          self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None, None], tas.styles)
 
         # Try to create a new Layer Group into the "topp" workspace
@@ -250,7 +293,10 @@ class CatalogTests(unittest.TestCase):
         self.assert_("tasmania_reloaded", tas2.name)
         self.assert_(isinstance(tas2, LayerGroup))
         self.assertEqual(tas2.workspace, "topp", tas2.workspace)
-        self.assertEqual(tas2.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas2.layers)
+        if self.gs_version >= "2.13":
+          self.assertEqual(tas2.layers, ['topp:tasmania_state_boundaries', 'topp:tasmania_water_bodies', 'topp:tasmania_roads', 'topp:tasmania_cities'], tas2.layers)
+        else:
+            self.assertEqual(tas2.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas2.layers)
         self.assertEqual(tas2.styles, [None, None, None, None], tas2.styles)
 
     def testStyles(self):
@@ -789,7 +835,10 @@ class ModifyingTests(unittest.TestCase):
     def testLayerGroupSave(self):
         tas = self.cat.get_layergroups("tasmania")[0]
 
-        self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas.layers)
+        if self.gs_version >= "2.13":
+            self.assertEqual(tas.layers, ['topp:tasmania_state_boundaries', 'topp:tasmania_water_bodies', 'topp:tasmania_roads', 'topp:tasmania_cities'], tas.layers)
+        else:
+            self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads', 'tasmania_cities'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None, None], tas.styles)
 
         tas.layers = tas.layers[:-1]
@@ -798,12 +847,18 @@ class ModifyingTests(unittest.TestCase):
         self.cat.save(tas)
 
         # this verifies the local state
-        self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
+        if self.gs_version >= "2.13":
+            self.assertEqual(tas.layers, ['topp:tasmania_state_boundaries', 'topp:tasmania_water_bodies', 'topp:tasmania_roads'], tas.layers)
+        else:
+            self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None], tas.styles)
 
         # force a refresh to check the remote state
         tas.refresh()
-        self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
+        if self.gs_version >= "2.13":
+            self.assertEqual(tas.layers, ['topp:tasmania_state_boundaries', 'topp:tasmania_water_bodies', 'topp:tasmania_roads'], tas.layers)
+        else:
+            self.assertEqual(tas.layers, ['tasmania_state_boundaries', 'tasmania_water_bodies', 'tasmania_roads'], tas.layers)
         self.assertEqual(tas.styles, [None, None, None], tas.styles)
 
     def testImageMosaic(self):
@@ -840,7 +895,7 @@ class ModifyingTests(unittest.TestCase):
         self.cat._cache.clear()
         resource = self.cat.get_layer("external").resource
         self.assert_(resource is not None)
-        
+       
         # add granule to mosaic
         granule_path = os.path.join(os.getcwd(), 'test/data/mosaic/granules/cea_20150102.tif')
         self.cat.add_granule(granule_path, name, workspace='topp')
