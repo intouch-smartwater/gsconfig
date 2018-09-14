@@ -336,6 +336,7 @@ class ModifyingTests(unittest.TestCase):
 
     def setUp(self):
         self.cat = Catalog(GSPARAMS['GSURL'], username=GSPARAMS['GSUSER'], password=GSPARAMS['GSPASSWORD'])
+        self.gs_version = self.cat.get_short_version()
 
     def testFeatureTypeSave(self):
         # test saving round trip
