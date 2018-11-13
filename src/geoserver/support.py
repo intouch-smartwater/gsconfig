@@ -254,8 +254,8 @@ def atom_link(node):
     if 'href' in node.attrib:
         return node.attrib['href']
     else:
-        l = node.find("{http://www.w3.org/2005/Atom}link")
-        return l.get('href')
+        link = node.find("{http://www.w3.org/2005/Atom}link")
+        return link.get('href')
 
 
 def atom_link_xml(builder, href):
@@ -332,6 +332,10 @@ def dimension_info(builder, metadata):
                 builder.data(metadata.referenceValue)
                 builder.end("referenceValue")
             builder.end("defaultValue")
+        if metadata.nearestMatchEnabled is not None:
+            builder.start("nearestMatchEnabled", dict())
+            builder.data(metadata.nearestMatchEnabled)
+            builder.end("nearestMatchEnabled")
 
         builder.end("dimensionInfo")
 
@@ -349,7 +353,7 @@ class DimensionInfo(object):
     )
 
     def __init__(self, name, enabled, presentation, resolution, units, unitSymbol,
-                 strategy=None, attribute=None, end_attribute=None, reference_value=None):
+                 strategy=None, attribute=None, end_attribute=None, reference_value=None, nearestMatchEnabled=None):
         self.name = name
         self.enabled = enabled
         self.attribute = attribute
@@ -360,6 +364,7 @@ class DimensionInfo(object):
         self.unitSymbol = unitSymbol
         self.strategy = strategy
         self.referenceValue = reference_value
+        self.nearestMatchEnabled = nearestMatchEnabled
 
     def _multipier(self, name):
         name = name.lower()
@@ -393,23 +398,25 @@ class DimensionInfo(object):
 
 def md_dimension_info(name, node):
     """Extract metadata Dimension Info from an xml node"""
-    child_text = lambda child_name: getattr(node.find(child_name), 'text', None)
-    resolution = child_text('resolution')
+    def _get_value(child_name):
+        return getattr(node.find(child_name), 'text', None)
+
+    resolution = _get_value('resolution')
     defaultValue = node.find("defaultValue")
     strategy = defaultValue.find("strategy") if defaultValue is not None else None
     strategy = strategy.text if strategy is not None else None
     return DimensionInfo(
         name,
-        child_text('enabled') == 'true',
-        child_text('presentation'),
+        _get_value('enabled') == 'true',
+        _get_value('presentation'),
         int(resolution) if resolution else None,
-        child_text('units'),
-        child_text('unitSymbol'),
-        # child_text('strategy'),
+        _get_value('units'),
+        _get_value('unitSymbol'),
         strategy,
-        child_text('attribute'),
-        child_text('endAttribute'),
-        child_text('referenceValue'),
+        _get_value('attribute'),
+        _get_value('endAttribute'),
+        _get_value('referenceValue'),
+        _get_value('nearestMatchEnabled')
     )
 
 

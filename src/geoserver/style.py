@@ -75,15 +75,15 @@ class Style(ResourceInfo):
     @property
     def sld_title(self):
         user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle")
-        if not user_style:
+        if user_style is None:
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
 
         title_node = None
-        if user_style:
+        if user_style is not None:
             try:
                 # it is not mandatory
                 title_node = user_style.find("{http://www.opengis.net/sld}Title")
-            except:
+            except AttributeError:
                 title_node = None
 
         return title_node.text if title_node is not None else None
@@ -91,15 +91,15 @@ class Style(ResourceInfo):
     @property
     def sld_name(self):
         user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle")
-        if not user_style:
+        if user_style is None:
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
 
         name_node = None
-        if user_style:
+        if user_style is not None:
             try:
                 # it is not mandatory
                 name_node = user_style.find("{http://www.opengis.net/sld}Name")
-            except:
+            except AttributeError:
                 name_node = None
 
         return name_node.text if name_node is not None else None

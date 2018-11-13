@@ -8,7 +8,7 @@ __author__ = "David Winslow"
 __copyright__ = "Copyright 2012-2018 Boundless, Copyright 2010-2012 OpenPlans"
 __license__ = "MIT"
 
-from geoserver.support import xml_property, write_bool, ResourceInfo, build_url
+from geoserver.support import ResourceInfo, build_url
 
 
 def workspace_from_index(catalog, node):

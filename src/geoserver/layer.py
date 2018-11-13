@@ -125,7 +125,7 @@ class Layer(ResourceInfo):
         ws_name = workspace_from_url(atom_link[0].get('href'))
         if self.gs_version >= "2.13":
             if ":" in name:
-                ws_name,name = name.split(':')
+                ws_name, name = name.split(':')
         return self.catalog.get_resources(names=name, workspaces=ws_name)[0]
 
     def _get_default_style(self):

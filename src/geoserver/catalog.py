@@ -12,12 +12,17 @@ __license__ = "MIT"
 from datetime import datetime, timedelta
 import logging
 from geoserver.layer import Layer
-from geoserver.resource import FeatureType, Coverage
-from geoserver.store import (coveragestore_from_index, datastore_from_index,
-                             wmsstore_from_index, UnsavedDataStore,
-                             UnsavedCoverageStore, UnsavedWmsStore)
+from geoserver.resource import FeatureType
+from geoserver.store import (
+    coveragestore_from_index,
+    datastore_from_index,
+    wmsstore_from_index,
+    UnsavedDataStore,
+    UnsavedCoverageStore,
+    UnsavedWmsStore
+)
 from geoserver.style import Style
-from geoserver.support import prepare_upload_bundle, build_url, JDBCVirtualTable
+from geoserver.support import prepare_upload_bundle, build_url
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
 import os
@@ -38,6 +43,11 @@ try:
 except ImportError:
     from urlparse import urlparse, parse_qsl
     from urllib import urlencode
+
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
 
 
 logger = logging.getLogger("gsconfig.catalog")
@@ -162,7 +172,7 @@ class Catalog(object):
                     try:
                         version = resource.find("Version").text
                         break
-                    except:
+                    except AttributeError:
                         pass
 
         # This will raise an exception if the catalog is not available
@@ -274,6 +284,14 @@ class Catalog(object):
         self._cache.clear()
         return resp
 
+    def _return_first_item(self, _list):
+        if len(_list) == 0:
+            return None
+        elif len(_list) > 1:
+            raise AmbiguousRequestError("Multiple items found")
+        else:
+            return _list[0]
+
     def get_stores(self, names=None, workspaces=None):
         '''
           Returns a list of stores in the catalog. If workspaces is specified will only return stores in those workspaces.
@@ -308,6 +326,16 @@ class Catalog(object):
             return ([store for store in stores if store.name in names])
 
         return stores
+
+    def get_store(self, name, workspace=None):
+        '''
+          Returns a single store object.
+          Will return None if no store is found.
+          Will raise an error if more than one store with the same name is found.
+        '''
+
+        stores = self.get_stores(workspaces=workspace, names=name)
+        return self._return_first_item(stores)
 
     def create_datastore(self, name, workspace=None):
         if isinstance(workspace, basestring):
@@ -507,9 +535,9 @@ class Catalog(object):
         """
         if path is None:
             raise Exception('You must provide a full path to the raster')
-            
+
         if ":" in layer_name:
-            ws_name,layer_name = layer_name.split(':')
+            ws_name, layer_name = layer_name.split(':')
 
         allowed_types = [
             'ImageMosaic',
@@ -844,6 +872,16 @@ class Catalog(object):
 
         return resources
 
+    def get_resource(self, name=None, store=None, workspace=None):
+        '''
+          returns a single resource object.
+          Will return None if no resource is found.
+          Will raise an error if more than one resource with the same name is found.
+        '''
+
+        resources = self.get_resources(names=name, stores=store, workspaces=workspace)
+        return self._return_first_item(resources)
+
     def get_layer(self, name):
         try:
             lyr = Layer(self, name)
@@ -856,7 +894,7 @@ class Catalog(object):
         if isinstance(resource, basestring):
             if self.get_short_version() >= "2.13":
                 if ":" in resource:
-                    ws_name,resource = resource.split(':')
+                    ws_name, resource = resource.split(':')
 
             resource = self.get_resources(names = resource)[0]
         layers_url = "{}/layers.xml".format(self.service_url)
@@ -913,6 +951,16 @@ class Catalog(object):
 
         return layergroups
 
+    def get_layergroup(self, name, workspace=None):
+        '''
+          returns a single layergroup object.
+          Will return None if no layergroup is found.
+          Will raise an error if more than one layergroup with the same name is found.
+        '''
+
+        layergroups = self.get_layergroups(names=name, workspaces=workspace)
+        return self._return_first_item(layergroups)
+
     def create_layergroup(self, name, layers = (), styles = (), bounds = None, mode = "SINGLE", abstract = None,
                           title = None, workspace = None):
         if self.get_layergroups(names=name, workspaces=workspace):
@@ -966,6 +1014,16 @@ class Catalog(object):
             return ([style for style in all_styles if style.name in names])
 
         return all_styles
+
+    def get_style(self, name, workspace=None):
+        '''
+          returns a single style object.
+          Will return None if no style is found.
+          Will raise an error if more than one style with the same name is found.
+        '''
+
+        styles = self.get_styles(names=name, workspaces=workspace)
+        return self._return_first_item(styles)
 
     def create_style(self, name, data, overwrite = False, workspace=None, style_format="sld10", raw=False):
         styles = self.get_styles(names=name, workspaces=workspace)
@@ -1045,6 +1103,16 @@ class Catalog(object):
             return ([ws for ws in workspaces if ws.name in names])
 
         return workspaces
+
+    def get_workspace(self, name):
+        '''
+          returns a single workspace object.
+          Will return None if no workspace is found.
+          Will raise an error if more than one workspace with the same name is found.
+        '''
+
+        workspaces = self.get_workspaces(names=name)
+        return self._return_first_item(workspaces)
 
     def get_default_workspace(self):
         ws = Workspace(self, "default")
