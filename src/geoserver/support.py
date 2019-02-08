@@ -66,7 +66,7 @@ def build_url(base, seg, query=None):
         query_string = "?" + urlencode(query)
     path = '/'.join(seg) + query_string
     adjusted_base = base.rstrip('/') + '/'
-    return urljoin(adjusted_base, path)
+    return urljoin(str(adjusted_base), str(path))
 
 
 def xml_property(path, converter = lambda x: x.text, default=None):
